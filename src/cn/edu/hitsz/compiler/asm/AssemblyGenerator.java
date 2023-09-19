@@ -32,7 +32,7 @@ public class AssemblyGenerator {
      */
     public void loadIR(List<Instruction> originInstructions) {
         // TODO: 读入前端提供的中间代码并生成所需要的信息
-        throw new NotImplementedException();
+//todo        throw new NotImplementedException();
     }
 
 
@@ -47,7 +47,7 @@ public class AssemblyGenerator {
      */
     public void run() {
         // TODO: 执行寄存器分配与代码生成
-        throw new NotImplementedException();
+//todo        throw new NotImplementedException();
     }
 
 
@@ -58,7 +58,7 @@ public class AssemblyGenerator {
      */
     public void dump(String path) {
         // TODO: 输出汇编代码到文件
-        throw new NotImplementedException();
+//todo        throw new NotImplementedException();
     }
 }
 

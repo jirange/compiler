@@ -3,9 +3,7 @@ package cn.edu.hitsz.compiler.symtab;
 import cn.edu.hitsz.compiler.NotImplementedException;
 import cn.edu.hitsz.compiler.utils.FileUtils;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 符号表
@@ -16,6 +14,8 @@ import java.util.Map;
  */
 public class SymbolTable {
 
+    private List< SymbolTableEntry> symbolTableList =new ArrayList<>();
+
     /**
      * 获取符号表中已有的条目
      *
@@ -24,7 +24,14 @@ public class SymbolTable {
      * @throws RuntimeException 该符号在表中不存在
      */
     public SymbolTableEntry get(String text) {
-        throw new NotImplementedException();
+//        throw new NotImplementedException();
+        for (SymbolTableEntry entry : symbolTableList) {
+            if (entry.getText().equals(text)){
+                return entry;
+            }
+        }
+        System.out.println("该符号在表中不存在");
+        throw new RuntimeException();
     }
 
     /**
@@ -35,7 +42,10 @@ public class SymbolTable {
      * @throws RuntimeException 该符号已在表中存在
      */
     public SymbolTableEntry add(String text) {
-        throw new NotImplementedException();
+        SymbolTableEntry symbolTableEntry = new SymbolTableEntry(text);
+        symbolTableList.add(symbolTableEntry);
+        return symbolTableEntry;
+//        throw new NotImplementedException();
     }
 
     /**
@@ -45,16 +55,27 @@ public class SymbolTable {
      * @return 该符号的条目是否位于符号表中
      */
     public boolean has(String text) {
-        throw new NotImplementedException();
+//        throw new NotImplementedException();
+        for (SymbolTableEntry entry : symbolTableList) {
+            if (entry.getText().equals(text)){
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
      * 获得符号表的所有条目以供 {@code dumpTable} 使用
-     *
+     * //todo 获得符号表的所有条目
      * @return 符号表的所有条目
      */
     private Map<String, SymbolTableEntry> getAllEntries() {
-        throw new NotImplementedException();
+//        throw new NotImplementedException();
+        Map<String, SymbolTableEntry> map = new HashMap<>();
+        for (SymbolTableEntry symbolTableEntry : symbolTableList) {
+            map.put(symbolTableEntry.getText(),symbolTableEntry);
+        }
+        return map;
     }
 
     /**

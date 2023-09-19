@@ -7,7 +7,7 @@ out
 data/out/*
 !data/out/.gitkeep
 
-template/
+#template/
 
 # for python script
 __pycache__
