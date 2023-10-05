@@ -26,6 +26,7 @@ public class LexicalAnalyzer {
     }
 
     private List<Integer> tokenKindStrList = new ArrayList<>();
+    private List<String> tokenStrList = new ArrayList<>();
     private Map<Integer, String> tokenKindStrMap = new HashMap<>();
     private String codeStr = "";
     private final int INTCONST_MID = 22;
@@ -74,7 +75,6 @@ public class LexicalAnalyzer {
 
         // TODO: 自动机实现的词法分析过程
         int status = 0;
-        //int aaa;
         Integer bbb;
 
         boolean flag = false;
@@ -82,20 +82,6 @@ public class LexicalAnalyzer {
         char[] chars = codeStr.toCharArray();
         for (char aChar : chars) {
             bbb = dMap.get(aChar);
-
-            /*aaa = switch (aChar) {
-                case '=' -> 3;
-                case ',' -> 4;
-                case ';' -> 5;
-                case '+' -> 6;
-                case '-' -> 7;
-                case '*' -> 8;
-                case '/' -> 9;
-                case '(' -> 10;
-                case ')' -> 11;
-                default -> -1;
-            };*/
-           // System.out.printf("aaa=%d  bbb=%d %b\n",aaa,bbb,aaa==bbb);
 
             // 状态机 DFA
 
@@ -133,18 +119,15 @@ public class LexicalAnalyzer {
             }
             if (flag) {
                 tokenKindStrList.add(status);
-//                int i = tokenKindStrList.lastIndexOf(status);
+                tokenStrList.add(status+"@"+values);
+//                tokenStrList.add(values);
                 int i = tokenKindStrList.size()-1;
                 tokenKindStrMap.put(i, values);
                 //把achar之前的处理
-                //value 是什么呢
-                /*if (aaa != -1) {
-                    //把achar之后的处理
-                    tokenKindStrList.add(aaa);
-                }*/
                 if (bbb != null) {
                     //把achar之后的处理
                     tokenKindStrList.add(bbb);
+                    tokenStrList.add(Character.toString(aChar));
                 }
                 status = 0;
                 values = "";
@@ -158,13 +141,9 @@ public class LexicalAnalyzer {
                     values = String.valueOf(aChar);
                 }
 
-            } /*else if (aaa != -1) {
-                tokenKindStrList.add(aaa);
-                status = 0;
-                values = "";
-            }*/
-            else if (bbb != null) {
+            } else if (bbb != null) {
                 tokenKindStrList.add(bbb);
+                tokenStrList.add(Character.toString(aChar));
                 status = 0;
                 values = "";
             }
@@ -186,9 +165,34 @@ public class LexicalAnalyzer {
         // 亦可以直接分析完整个文件
         // 总之实现过程能转化为一列表即可
 
+        System.out.println(tokenKindStrList);
+        System.out.println(tokenStrList);
+        for (String s : tokenStrList) {
+            if (s.equals(";")){
+                tokenList.add(Token.simple("Semicolon"));
+            } else if ("52".equals(s.split("@")[0])) {
+                tokenList.add(Token.normal("IntConst", s.split("@")[1]));
+            } else if ("51".equals(s.split("@")[0])) {
+                String ss =s.split("@")[1];
+                if (ss.equals("int") || ss.equals("return"))
+                {
+                    tokenList.add(Token.simple(ss));
 
+                } else {
+                    if (!symbolTable.has(ss)){
+                        symbolTable.add(ss);
+                    }
+                    tokenList.add(Token.normal("id" , ss));
+                }
+            }
+            else {
+                tokenList.add(Token.simple(s));
 
-        for (int i = 0; i < tokenKindStrList.size(); i++) {
+            }
+
+        }
+
+        /*for (int i = 0; i < tokenKindStrList.size(); i++) {
             Integer integer = tokenKindStrList.get(i);
             if (integer == 51) {
                 //如果是变量 判断死不是int/return/
@@ -230,7 +234,7 @@ public class LexicalAnalyzer {
                     tokenList.add(Token.simple(str));
                 }
             }
-        }
+        }*/
         //在你处理完所有输入之后, 请生成一个作为 EOF 的词法单元
         tokenList.add(Token.eof());
         return tokenList;
