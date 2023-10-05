@@ -8,10 +8,7 @@ import cn.edu.hitsz.compiler.utils.FileUtils;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.StreamSupport;
 /**
  * TODO: 实验一: 实现词法分析
@@ -64,14 +61,29 @@ public class LexicalAnalyzer {
      * 需要维护实验一所需的符号表条目, 而得在语法分析中才能确定的符号表条目的成员可以先设置为 null
      */
     public void run() {
+        Map<Character, Integer> dMap = new HashMap<>();
+        dMap.put('=',3);
+        dMap.put(',',4);
+        dMap.put(';',5);
+        dMap.put('+',6);
+        dMap.put('-',7);
+        dMap.put('*',8);
+        dMap.put('/',9);
+        dMap.put('(',10);
+        dMap.put(')',11);
+
         // TODO: 自动机实现的词法分析过程
         int status = 0;
-        int aaa;
+        //int aaa;
+        Integer bbb;
+
         boolean flag = false;
         String values = "";
         char[] chars = codeStr.toCharArray();
         for (char aChar : chars) {
-            aaa = switch (aChar) {
+            bbb = dMap.get(aChar);
+
+            /*aaa = switch (aChar) {
                 case '=' -> 3;
                 case ',' -> 4;
                 case ';' -> 5;
@@ -82,8 +94,12 @@ public class LexicalAnalyzer {
                 case '(' -> 10;
                 case ')' -> 11;
                 default -> -1;
-            };
-            flag = false;
+            };*/
+           // System.out.printf("aaa=%d  bbb=%d %b\n",aaa,bbb,aaa==bbb);
+
+            // 状态机 DFA
+
+            flag = false; //状态机运行/终止
             switch (status) {
                 case INTCONST_MID:
                     if (Character.isDigit(aChar)) {
@@ -109,7 +125,6 @@ public class LexicalAnalyzer {
                     } else if (Character.isLetter(aChar)) {
                         status = ID_MID;
                     } else {
-                        System.out.println(aChar+"不是字母");
                         status = 0;
                     }
                     break;
@@ -118,21 +133,38 @@ public class LexicalAnalyzer {
             }
             if (flag) {
                 tokenKindStrList.add(status);
-                int i = tokenKindStrList.indexOf(status);
+//                int i = tokenKindStrList.lastIndexOf(status);
+                int i = tokenKindStrList.size()-1;
                 tokenKindStrMap.put(i, values);
                 //把achar之前的处理
                 //value 是什么呢
-                if (aaa != -1) {
+                /*if (aaa != -1) {
                     //把achar之后的处理
                     tokenKindStrList.add(aaa);
+                }*/
+                if (bbb != null) {
+                    //把achar之后的处理
+                    tokenKindStrList.add(bbb);
                 }
                 status = 0;
                 values = "";
-            } else if (status == ID_MID || status == INTCONST_MID) {
+            } else if (status == ID_MID) {
                 values = values + aChar;
 
-            } else if (aaa != -1) {
+            } else if (status == INTCONST_MID) {
+                if (values.length()>0){
+                    values = String.valueOf(Integer.parseInt(values) + Integer.parseInt(String.valueOf(aChar)));
+                }else {
+                    values = String.valueOf(aChar);
+                }
+
+            } /*else if (aaa != -1) {
                 tokenKindStrList.add(aaa);
+                status = 0;
+                values = "";
+            }*/
+            else if (bbb != null) {
+                tokenKindStrList.add(bbb);
                 status = 0;
                 values = "";
             }
@@ -155,10 +187,12 @@ public class LexicalAnalyzer {
         // 总之实现过程能转化为一列表即可
 
 
-        for (Integer integer : tokenKindStrList) {
+
+        for (int i = 0; i < tokenKindStrList.size(); i++) {
+            Integer integer = tokenKindStrList.get(i);
             if (integer == 51) {
                 //如果是变量 判断死不是int/return/
-                String value = tokenKindStrMap.get(tokenKindStrList.indexOf(integer));
+                String value = tokenKindStrMap.get(i);
                 if ("int".equals(value)) {
                     integer = 1;
                     tokenList.add(Token.simple("int"));
@@ -177,7 +211,7 @@ public class LexicalAnalyzer {
                 tokenList.add(Token.simple("Semicolon"));
             } else if (integer == 52) {
                 //整数
-                String value = tokenKindStrMap.get(tokenKindStrList.indexOf(integer));
+                String value = tokenKindStrMap.get(i);
                 tokenList.add(Token.normal("IntConst", value));
             } else {
                 String str = switch (integer) {
@@ -191,6 +225,7 @@ public class LexicalAnalyzer {
                     case 11 -> ")";
                     default -> "";
                 };
+
                 if (str.length() > 0) {
                     tokenList.add(Token.simple(str));
                 }
