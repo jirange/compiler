@@ -25,9 +25,8 @@ public class LexicalAnalyzer {
         this.symbolTable = symbolTable;
     }
 
-    private List<Integer> tokenKindStrList = new ArrayList<>();
     private List<String> tokenStrList = new ArrayList<>();
-    private Map<Integer, String> tokenKindStrMap = new HashMap<>();
+    private List<Token> tokenListaa = new ArrayList<>();
     private String codeStr = "";
     private final int INTCONST_MID = 22;
     private final int INTCONST_FIN = 52;
@@ -118,16 +117,33 @@ public class LexicalAnalyzer {
                     System.out.println("status and aChar" + status + aChar);
             }
             if (flag) {
-                tokenKindStrList.add(status);
                 tokenStrList.add(status+"@"+values);
 //                tokenStrList.add(values);
-                int i = tokenKindStrList.size()-1;
-                tokenKindStrMap.put(i, values);
+                if (status ==51){
+                    if ("int".equals(values)||"return".equals(values)){
+                        tokenListaa.add(Token.simple(values));
+                    }else {
+                        tokenListaa.add(Token.normal("id" , values));
+                        if (!symbolTable.has(values)){
+                            symbolTable.add(values);
+                        }
+                    }
+
+                } else if (status == 52) {
+                    tokenListaa.add(Token.normal("IntConst" , values));
+
+                }
+
                 //把achar之前的处理
-                if (bbb != null) {
-                    //把achar之后的处理
-                    tokenKindStrList.add(bbb);
+                if (bbb != null && bbb ==5) {
                     tokenStrList.add(Character.toString(aChar));
+
+                    tokenListaa.add(Token.simple("Semicolon"));
+
+                } else if (bbb != null) {
+                    //把achar之后的处理
+                    tokenStrList.add(Character.toString(aChar));
+                    tokenListaa.add(Token.simple(Character.toString(aChar)));
                 }
                 status = 0;
                 values = "";
@@ -141,9 +157,14 @@ public class LexicalAnalyzer {
                     values = String.valueOf(aChar);
                 }
 
+            } else if (bbb != null && bbb ==5) {
+                tokenStrList.add("Semicolon");
+                tokenListaa.add(Token.simple("Semicolon"));
+                status = 0;
+                values = "";
             } else if (bbb != null) {
-                tokenKindStrList.add(bbb);
                 tokenStrList.add(Character.toString(aChar));
+                tokenListaa.add(Token.simple(Character.toString(aChar)));
                 status = 0;
                 values = "";
             }
@@ -165,9 +186,10 @@ public class LexicalAnalyzer {
         // 亦可以直接分析完整个文件
         // 总之实现过程能转化为一列表即可
 
-        System.out.println(tokenKindStrList);
         System.out.println(tokenStrList);
-        for (String s : tokenStrList) {
+        System.out.println(tokenListaa);
+        tokenList.addAll(tokenListaa);
+        /*for (String s : tokenStrList) {
             if (s.equals(";")){
                 tokenList.add(Token.simple("Semicolon"));
             } else if ("52".equals(s.split("@")[0])) {
@@ -187,54 +209,10 @@ public class LexicalAnalyzer {
             }
             else {
                 tokenList.add(Token.simple(s));
-
             }
 
-        }
-
-        /*for (int i = 0; i < tokenKindStrList.size(); i++) {
-            Integer integer = tokenKindStrList.get(i);
-            if (integer == 51) {
-                //如果是变量 判断死不是int/return/
-                String value = tokenKindStrMap.get(i);
-                if ("int".equals(value)) {
-                    integer = 1;
-                    tokenList.add(Token.simple("int"));
-
-                } else if ("return".equals(value)) {
-                    integer = 2;
-                    tokenList.add(Token.simple("return"));
-                } else {
-                    if (!symbolTable.has(value)){
-                        symbolTable.add(value);
-                    }
-                    tokenList.add(Token.normal("id", value));
-                }
-            } else if (integer == 5) {
-                //如果是分号，则变为semicolon
-                tokenList.add(Token.simple("Semicolon"));
-            } else if (integer == 52) {
-                //整数
-                String value = tokenKindStrMap.get(i);
-                tokenList.add(Token.normal("IntConst", value));
-            } else {
-                String str = switch (integer) {
-                    case 3 -> "=";
-                    case 4 -> ",";
-                    case 6 -> "+";
-                    case 7 -> "-";
-                    case 8 -> "*";
-                    case 9 -> "/";
-                    case 10 -> "(";
-                    case 11 -> ")";
-                    default -> "";
-                };
-
-                if (str.length() > 0) {
-                    tokenList.add(Token.simple(str));
-                }
-            }
         }*/
+
         //在你处理完所有输入之后, 请生成一个作为 EOF 的词法单元
         tokenList.add(Token.eof());
         return tokenList;
