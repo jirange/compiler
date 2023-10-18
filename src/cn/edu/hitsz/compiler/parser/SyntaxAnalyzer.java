@@ -23,7 +23,7 @@ public class SyntaxAnalyzer {
     private Stack<Token> tokenStack = new Stack<>();
     private Stack<Status> statusStack = new Stack<>();
     Queue<Token> inputTokenQ = new ArrayDeque<>();
-    LRTable lrTable;
+    Status initStatus;
 
 
     public SyntaxAnalyzer(SymbolTable symbolTable) {
@@ -99,7 +99,7 @@ public class SyntaxAnalyzer {
         // 你可以自行选择要如何使用该表格:
         // 是直接对 LRTable 调用 getAction/getGoto, 抑或是直接将 initStatus 存起来使用
 
-        lrTable = table;
+        initStatus = table.getInit();
         // throw new NotImplementedException();
 
     }
@@ -112,7 +112,8 @@ public class SyntaxAnalyzer {
 
         // 1．建立符号栈和状态栈，初始化栈；
         // 调用 LRTable 类的 getInit()方法返回 Status 来初始化状态栈
-        statusStack.push(lrTable.getInit());
+        statusStack.push(initStatus);
+
         while (!inputTokenQ.isEmpty()) {
             // 2．根据状态栈栈顶元素和待读入的下一个 token 查询判断下一个待执行动作；
             Action action = statusStack.peek().getAction(inputTokenQ.peek());
@@ -144,8 +145,7 @@ public class SyntaxAnalyzer {
                     callWhenInAccept(statusStack.peek());
                     return;
                 case Error:
-                    System.out.println("ERROR: action.getKind()=" + action.getKind());
-                    break;
+                    throw new RuntimeException("ERROR TOKEN");
                 default:
                     break;
             }
