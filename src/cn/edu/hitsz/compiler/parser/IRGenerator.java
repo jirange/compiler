@@ -122,19 +122,19 @@ public class IRGenerator implements ActionObserver {
 
     @Override
     public void whenAccept(Status currentStatus) {
-        // TODO
+        //
 //        throw new NotImplementedException();
-        System.out.println("IRGenerator Accept\n");
+//        System.out.println("IRGenerator Accept\n");
     }
 
     @Override
     public void setSymbolTable(SymbolTable table) {
-        // TODO
-//todo        throw new NotImplementedException();
+        //
+//        throw new NotImplementedException();
     }
 
     public List<Instruction> getIR() {
-        // TODO
+        //
 //        throw new NotImplementedException();
         //return new ArrayList<Instruction>();
         return Instructions;

@@ -1,11 +1,14 @@
 package cn.edu.hitsz.compiler.asm;
 
 import cn.edu.hitsz.compiler.ir.*;
+import cn.edu.hitsz.compiler.utils.FileUtils;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 
 /**
@@ -49,17 +52,18 @@ public class AssemblyGenerator {
         for (Instruction originInstruction : originInstructions) {
             // System.out.println(originInstruction);
             InstructionKind kind = originInstruction.getKind();
-            if (kind.isUnary()) {
-                //对于 UnaryOp(一个操作数的指令)：
-
-
+            if (kind.isReturn()) {
+                // 根据语言规定，当遇到 Ret 指令后直接舍弃后续指令。
                 predInstructions.add(originInstruction);
                 int index = predInstructions.indexOf(originInstruction);
-                if (kind.isReturn()) {
-                    // 根据语言规定，当遇到 Ret 指令后直接舍弃后续指令。
-                    lastUse.put(originInstruction.getReturnValue(), index);
-                    break;
-                }
+                lastUse.put(originInstruction.getReturnValue(), index);
+                break;
+            }
+            if (kind.isUnary()) {
+                //对于 UnaryOp(一个操作数的指令)：
+                predInstructions.add(originInstruction);
+                int index = predInstructions.indexOf(originInstruction);
+
                 lastUse.put(originInstruction.getResult(), index);
                 if (originInstruction.getFrom().isIRVariable()) {
                     lastUse.put(originInstruction.getFrom(), index);
@@ -86,7 +90,7 @@ public class AssemblyGenerator {
                             predInstructions.add(Instruction.createMov(result, value));
                         }
                         default -> {
-                            System.out.println("我是 " + originInstruction);
+                            System.out.println("ERROR " + originInstruction);
                         }
                     }
                     int index = predInstructions.indexOf(originInstruction);
@@ -95,15 +99,27 @@ public class AssemblyGenerator {
                     if (kind == InstructionKind.MUL || (kind == InstructionKind.SUB && lhs.isImmediate())) {
 
                         IRVariable a = IRVariable.temp();
+                        int index = predInstructions.size();
+                        lastUse.put(a, index);
+                        lastUse.put(result, index+1);
                         if (lhs.isImmediate()) {
                             // 将操作一个立即数的乘法和左立即数减法调整，前插一条 MOV a，imm，
-                            predInstructions.add(Instruction.createMov(a, lhs));
+                            Instruction mov = Instruction.createMov(a, lhs);
+                            predInstructions.add(mov);
+
                             //用 a 替换原立即数，将指令调整为无立即数指令。
-                            predInstructions.add(Instruction.createMul(result, a, rhs));
+                            if (kind == InstructionKind.SUB){
+                                predInstructions.add(Instruction.createSub(result, a, rhs));
+
+                            }else {
+                                predInstructions.add(Instruction.createMul(result, a, rhs));
+                            }
+                            lastUse.put(rhs,index+1);
 
                         } else {
                             predInstructions.add(Instruction.createMov(a, rhs));
                             predInstructions.add(Instruction.createMul(result, lhs, a));
+                            lastUse.put(lhs,index+1);
                         }
 
 
@@ -117,18 +133,11 @@ public class AssemblyGenerator {
 
                         } else {
                             predInstructions.add(originInstruction);
+                            lastUse.put(lhs, predInstructions.size()-1);
                         }
+                        lastUse.put(result, predInstructions.size()-1);
                     }
-                    // 维护 lastUse
-                    int index = predInstructions.indexOf(originInstruction);
-                    if (lhs.isIRVariable()) {
-                        lastUse.put(lhs, index);
-                    }
-                    if (rhs.isIRVariable()) {
-                        lastUse.put(rhs, index);
-                    }
-                    lastUse.put(result, index);
-                    System.out.println(index);
+
 
 
                 } else {
@@ -144,10 +153,12 @@ public class AssemblyGenerator {
 
 
         }
-        System.out.println(lastUse);
+//        System.out.println(originInstructions);
+//        System.out.println(lastUse);
+//        System.out.println(predInstructions);
     }
 
-    Reg registerSelection() {
+    private Reg registerSelection() {
         // todo 寄存器选择算法
         for (Reg reg : Reg.values()) {
             if (reg == Reg.a0) {
@@ -155,30 +166,30 @@ public class AssemblyGenerator {
             }
             if (!bMap.containsValue(reg)) {
                 //1. 如果有空闲寄存器，选择空闲寄存器；
-                System.out.println("选择空闲寄存器"+reg);
                 return reg;
             }
         }
         //2. 否则，夺取不再使用的变量所占的寄存器
-        // todo 如何知道一个变量是否不再使用呢  lastUse
+        // 如何知道一个变量是否不再使用呢  lastUse
         for (IRValue irValue : lastUse.keySet()) {
             if (lastUse.get(irValue) == -1) {
                 // 这个变量 后续不再使用了
-                System.out.println("夺取不再使用的变量"+irValue+"所占的寄存器"+bMap.getByKey(irValue));
+                if (bMap.getByKey(irValue)==null){
+                    // 这个不用的变量已经分给其他了
+                    continue;
+                }
                 return  bMap.getByKey(irValue);
             }
         }
         System.out.println("ERROR: 寄存器满了，挤不出来了");
         return Reg.t0;
     }
-    Reg registerAllocation(IRValue variable){
-        System.out.println("正在给 "+variable+"分配寄存器");
+    private Reg registerAllocation(IRValue variable){
         if (bMap.containsKey(variable)){
             return bMap.getByKey(variable);
         }
         Reg reg = registerSelection();
         bMap.replace(variable,reg);
-        System.out.println("正在给 "+variable+"分配新的寄存器"+reg);
         return reg;
     }
 
@@ -198,20 +209,14 @@ public class AssemblyGenerator {
 
 
         for (Instruction predInstruction : predInstructions) {
-            System.out.println(predInstruction);
+            int index = predInstructions.indexOf(predInstruction);
+            // 维护 lastUse 当这个变量之后不会用之后，就将最后使用的指令索引置为-1
+            for (IRValue variable : lastUse.keySet()) {
+                if (lastUse.get(variable)< index){
+                    lastUse.put(variable,-1);
+                }
+            }
 
-
-//            //2. 如果左操作数lhs已经在寄存器中，使用当前寄存器，右操作数rhs同理。
-//            IRValue lhs = predInstruction.getLHS();
-//            if (lhs.isIRVariable() && !bMap.containsKey(lhs)) {
-//                //3. 否则，如果左操作数lhs是变量且在内存中，使用寄存器选择算法为它选
-//                //择一个寄存器，将内存中的变量值加载到寄存器中，右操作数rhs同理。
-//                Reg lhsreg = registerSelection();
-//
-//                bMap.replace((IRVariable) lhs, lhsreg);
-//            }
-
-            //4. 生成汇编指令。
             InstructionKind kind = predInstruction.getKind();
             switch (kind) {
                 case MOV -> {
@@ -281,8 +286,9 @@ public class AssemblyGenerator {
      */
     public void dump(String path) {
         // TODO: 输出汇编代码到文件
-//todo        throw new NotImplementedException();
-        System.out.println(RVInstructions);
+//        throw new NotImplementedException();
+
+        FileUtils.writeLines(path,Stream.concat(Stream.of(".text"), RVInstructions.stream().map(RVInstruction::toString)).toList() );
     }
 }
 

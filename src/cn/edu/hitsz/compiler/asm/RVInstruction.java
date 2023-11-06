@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * 中间表示的指令.
+ * RV指令.
  * <br>
  */
 public class RVInstruction {
@@ -20,9 +20,7 @@ public class RVInstruction {
     }
 
     public static RVInstruction createSub(Reg result, Reg lhs, Reg rhs) {
-        System.out.println("我收到是："+result+" "+lhs+" "+rhs);
         return new RVInstruction(RVInstructionKind.SUB, result, List.of(lhs, rhs));
-
     }
 
     public static RVInstruction createMul(Reg result, Reg lhs, Reg rhs) {
@@ -49,22 +47,14 @@ public class RVInstruction {
         return new RVInstruction(RVInstructionKind.LI, result, Integer.parseInt(imm.toString()));
     }
 
-
-    //============================== 不同种类 IR 的参数 getter ==============================
-
-
     //============================== 基础设施 ==============================
     @Override
     public String toString() {
         final var kindString = kind.toString();
         final var resultString = resultReg == null ? "" : resultReg.toString();
-        final var operandsString = operandsReg.stream().map(Objects::toString).collect(Collectors.joining(", "));
+        final var operandsString = operandsReg==null ? "" :", "+operandsReg.stream().map(Objects::toString).collect(Collectors.joining(", "));
         String immString = imm == null ? "" : ", " + imm.toString();
-        return "\t%s %s, %s%s\t".formatted(kindString, resultString, operandsString, immString);
-    }
-
-    public List<Reg> getOperands() {
-        return Collections.unmodifiableList(operandsReg);
+        return "\t%s %s%s%s\t".formatted(kindString, resultString, operandsString, immString);
     }
 
     private RVInstruction(RVInstructionKind kind, Reg result, List<Reg> operands) {
@@ -90,15 +80,4 @@ public class RVInstruction {
     private final List<Reg> operandsReg;
     private Integer imm;
 
-//    private void ensureKindMatch(Set<InstructionKind> targetKinds) {
-//        final var kind = getKind();
-//        if (!targetKinds.contains(kind)) {
-//            final var acceptKindsString = targetKinds.stream()
-//                .map(InstructionKind::toString)
-//                .collect(Collectors.joining(","));
-//
-//            throw new RuntimeException(
-//                "Illegal operand access, except %s, but given %s".formatted(acceptKindsString, kind));
-//        }
-//    }
 }
