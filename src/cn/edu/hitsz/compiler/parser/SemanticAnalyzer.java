@@ -19,7 +19,7 @@ import java.util.Stack;
 public class SemanticAnalyzer implements ActionObserver {
 
     /* 语义分析栈的数据结构*/
-    private Stack<Token> tokenStack = new Stack<>();//符号栈 token+非终结符 或者token+null
+    private Stack<Token> tokenStack = new Stack<>();//符号栈 token+null
     Map<Term,SourceCodeType> typeMap = new HashMap<>();
     SymbolTable symbolTable;
 
